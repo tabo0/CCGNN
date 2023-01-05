@@ -1,4 +1,4 @@
-# C^{2}GNN
+# CCGNN
 The code and dataset for our IJCAI 2023 paper: . We have implemented our methods in Pytorch.
 
 ## Dependencies
