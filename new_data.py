@@ -1,9 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# @Time : 2021/11/15 7:30
-# @Author : ZM7
-# @File : new_data
-# @Software: PyCharm
 
 import dgl
 import pandas as pd
