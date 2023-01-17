@@ -10,7 +10,7 @@ import torch
 from sys import exit
 import pandas as pd
 import numpy as np
-from MyDGSR import MyDGSR, collate, collate_test
+from CCGNN import CCGNN, collate, collate_test
 from dgl import load_graphs
 import pickle
 from utils import myFloder
@@ -21,7 +21,7 @@ import sys
 from torch.utils.data import Dataset, DataLoader
 import torch.optim as optim
 import torch.nn as nn
-from DGSR_utils import eval_metric, mkdir_if_not_exist, Logger
+from CCGNN_utils import eval_metric, mkdir_if_not_exist, Logger
 
 
 warnings.filterwarnings('ignore')
@@ -60,7 +60,7 @@ parser.add_argument('--last_item', action='store_true', help='aggreate last item
 parser.add_argument("--record", action='store_true', default=False, help='record experimental results')
 parser.add_argument("--val", action='store_true', default=False)
 parser.add_argument("--model_record", action='store_true', default=False, help='record model')
-os.chdir('/home/ubuntu/DGSR')
+os.chdir('/home/ubuntu/CCGNN')
 opt = parser.parse_args()
 args, extras = parser.parse_known_args()
 os.environ["CUDA_VISIBLE_DEVICES"] = opt.gpu
@@ -113,7 +113,7 @@ if opt.val:
     val_data = DataLoader(dataset=val_set, batch_size=opt.batchSize, collate_fn=lambda x: collate_test(x, data_neg), pin_memory=True, num_workers=2)
 
 # 初始化模型
-model = MyDGSR(user_num=user_num, item_num=item_num, input_dim=opt.hidden_size, item_max_length=opt.item_max_length,
+model = CCGNN(user_num=user_num, item_num=item_num, input_dim=opt.hidden_size, item_max_length=opt.item_max_length,
              user_max_length=opt.user_max_length, feat_drop=opt.feat_drop, attn_drop=opt.attn_drop, user_long=opt.user_long, user_short=opt.user_short,
              item_long=opt.item_long, item_short=opt.item_short, user_update=opt.user_update, item_update=opt.item_update, last_item=opt.last_item,
              layer_num=opt.layer_num,useUnified=opt.useUnified,usexTime=opt.usexTime,usejTime=opt.usejTime,compare=opt.compare,useTime=opt.useTime,duibi=opt.duibi,useMin=opt.useMin).cuda()
