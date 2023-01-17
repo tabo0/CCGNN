@@ -19,7 +19,7 @@ data set in the file.
 
 ### Training and Testing 
 
-Then you can run the file ```new_main.py``` to train and test our model. 
+Then you can run the file ```Mynew_main.py``` to train and test our model. 
 The detailed commands can be found in ```{dataset}.sh```
 
 
