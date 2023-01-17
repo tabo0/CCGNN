@@ -1,9 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# @Time : 2021/11/19 10:54
-# @Author : ZM7
-# @File : DGSR_utils
-# @Software: PyCharm
 
 import numpy as np
 import sys
