@@ -1,9 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# @Time : 2020/7/1 3:58
-# @Author : ZM7
-# @File : utils.py
-# @Software: PyCharm
 import os
 from torch.utils.data import Dataset, DataLoader
 import _pickle as cPickle
