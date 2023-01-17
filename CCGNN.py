@@ -1,9 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# @Time : 2021/11/17 3:29
-# @Author : ZM7
-# @File : DGSR
-# @Software: PyCharm
 import dgl
 import torch
 import torch.nn as nn
@@ -11,11 +7,11 @@ import torch.nn.functional as F
 import numpy as np
 
 
-class MyDGSR(nn.Module):
+class CCGNN(nn.Module):
     def __init__(self, user_num, item_num, input_dim, item_max_length, user_max_length, feat_drop=0.2, attn_drop=0.2,
                  user_long='orgat', user_short='att', item_long='ogat', item_short='att', user_update='rnn',
                  item_update='rnn', last_item=True, layer_num=3, time=True,useUnified=False,usexTime=True,usejTime=True,a=0.5,compare=0,useTime=False,duibi=False,useMin=False):
-        super(MyDGSR, self).__init__()
+        super(CCGNN, self).__init__()
         self.user_num = user_num
         self.item_num = item_num
         self.hidden_size = input_dim
@@ -55,7 +51,7 @@ class MyDGSR(nn.Module):
                 nn.ReLU(),
                 nn.Linear(self.hidden_size, self.hidden_size, bias=True),
                 )
-        self.layers = nn.ModuleList([DGSRLayers(self.hidden_size, self.hidden_size, self.user_max_length, self.item_max_length, feat_drop, attn_drop,
+        self.layers = nn.ModuleList([CCGNNLayers(self.hidden_size, self.hidden_size, self.user_max_length, self.item_max_length, feat_drop, attn_drop,
                                                 self.user_long, self.user_short, self.item_long, self.item_short,
                                                 self.user_update, self.item_update,usexTime=usexTime,usejTime=usejTime,useTime=useTime,useMin=useMin) for _ in range(self.layer_num)])
         self.reset_parameters()
@@ -151,10 +147,10 @@ class MyDGSR(nn.Module):
 
 
 
-class DGSRLayers(nn.Module):
+class CCGNNLayers(nn.Module):
     def __init__(self, in_feats, out_feats, user_max_length, item_max_length, feat_drop=0.2, attn_drop=0.2, user_long='orgat', user_short='att',
                  item_long='orgat', item_short='att', user_update='residual', item_update='residual', K=4,usexTime=True,usejTime=True,useTime=False,useMin=False):
-        super(DGSRLayers, self).__init__()
+        super(CCGNNLayers, self).__init__()
         self.hidden_size = in_feats
         self.user_long = user_long
         self.item_long = item_long
@@ -289,58 +285,6 @@ class DGSRLayers(nn.Module):
         dic['user_h'] = edges.src['user_h']
         dic['item_h'] = edges.dst['item_h']
         return dic
-
-    def item_reduce_func(self, nodes):
-        h = []
-        #先根据time排序
-        #order = torch.sort(nodes.mailbox['time'], 1)[1]
-        order = torch.argsort(torch.argsort(nodes.mailbox['time'], 1), 1)
-        re_order = nodes.mailbox['time'].shape[1] -order -1
-        length = nodes.mailbox['item_h'].shape[0]
-        #长期兴趣编码
-        if self.item_long == 'orgat':
-            e_ij = torch.sum((self.i_time_encoding(re_order) + nodes.mailbox['user_h']) * nodes.mailbox['item_h'], dim=2)\
-                   /torch.sqrt(torch.tensor(self.hidden_size).float())
-            alpha = self.atten_drop(F.softmax(e_ij, dim=1))
-            if len(alpha.shape) == 2:
-                alpha = alpha.unsqueeze(2)
-            h_long = torch.sum(alpha * (nodes.mailbox['user_h'] + self.i_time_encoding_k(re_order)), dim=1)
-            h.append(h_long)
-        elif self.item_long == 'gru':
-            rnn_order = torch.sort(nodes.mailbox['time'], 1)[1]
-            _, hidden_u = self.gru_i(nodes.mailbox['user_h'][torch.arange(length).unsqueeze(1), rnn_order])
-            h.append(hidden_u.squeeze(0))
-        ## 短期兴趣编码
-        last = torch.argmax(nodes.mailbox['time'], 1)
-        last_em = nodes.mailbox['user_h'][torch.arange(length), last, :].unsqueeze(1)
-        if self.item_short == 'att':
-            e_ij1 = torch.sum(last_em * nodes.mailbox['user_h'], dim=2) / torch.sqrt(
-                torch.tensor(self.hidden_size).float())
-            alpha1 = self.atten_drop(F.softmax(e_ij1, dim=1))
-            if len(alpha1.shape) == 2:
-                alpha1 = alpha1.unsqueeze(2)
-            h_short = torch.sum(alpha1 * nodes.mailbox['user_h'], dim=1)
-            h.append(h_short)
-        elif self.item_short == 'last':
-            h.append(last_em.squeeze())
-        if len(h) == 1:
-            return {'item_h': h[0]}
-        else:
-            return {'item_h': self.agg_gate_i(torch.cat(h,-1))}
-    def new_item_reduce_func(self, nodes):  
-        flag=True
-        order=torch.argsort(torch.argsort(nodes.mailbox['time'], 1),1)
-        p=F.softmax(torch.argsort(nodes.mailbox['time'], 1).float(),dim=1)
-        re_order = nodes.mailbox['time'].shape[1] - order -1
-        #b*l*d   b*l*l
-        e_ij = torch.sum(torch.matmul(self.i_time_encoding(re_order) + nodes.mailbox['user_h'] , nodes.mailbox['item_h'].transpose(1,2)),dim=2)/torch.sqrt(torch.tensor(self.hidden_size).float())
-        if(flag==True):
-            e_ij=e_ij*p
-        alpha = self.atten_drop(F.softmax(e_ij, dim=1))
-        if len(alpha.shape) == 2:
-                alpha = alpha.unsqueeze(2)
-        h_long = torch.sum(alpha * (nodes.mailbox['user_h']), dim=1)
-        return {'item_h': self.agg_gate_i(h_long)}
     def user_message_func(self, edges):
         dic = {}
         dic['time'] = edges.data['time']
@@ -440,67 +384,7 @@ class DGSRLayers(nn.Module):
             h_long = torch.sum(alpha * (nodes.mailbox['item_h']), dim=1)
         h_long=F.normalize(h_long)
         return {'user_h': self.agg_gate_u(h_long)}
-    def new_user_reduce_func(self, nodes):
-        flag=True
-        order=torch.argsort(torch.argsort(nodes.mailbox['time'], 1),1)
-        p=F.softmax(torch.argsort(nodes.mailbox['time'], 1).float(),dim=1)
-        re_order = nodes.mailbox['time'].shape[1] - order -1
-        #b*l*d   b*l*l
-        temp=nodes.mailbox['user_h']
-        #b*d*l
-        temp=temp.transpose(1,2)
-        #b*l*1
-        e_ij = torch.sum(torch.matmul(self.u_time_encoding(re_order) + nodes.mailbox['item_h'] ,temp),dim=2)/torch.sqrt(torch.tensor(self.hidden_size).float())
-        if(flag==True):
-            e_ij=e_ij*p
-        alpha = self.atten_drop(F.softmax(e_ij, dim=1))
-        if len(alpha.shape) == 2:
-                alpha = alpha.unsqueeze(2)
-        h_long = torch.sum(alpha * (nodes.mailbox['item_h']), dim=1)
-        return {'user_h': self.agg_gate_u(h_long)}
-    def user_reduce_func(self, nodes):
-        h = []
-        # 先根据time排序
-        temp=torch.argsort(nodes.mailbox['time'], 1)
-        # bug?
-        # temp=torch.argsort(nodes.mailbox['time'], 0)
 
-        order = torch.argsort(temp,1)
-        # bug?
-        # order = torch.argsort(temp,0)
-        re_order = nodes.mailbox['time'].shape[1] - order -1
-        # re_order = nodes.mailbox['time'].shape[0] - temp -1
-        length = nodes.mailbox['user_h'].shape[0]
-        # 长期兴趣编码
-        if self.user_long == 'orgat':
-            e_ij = torch.sum((self.u_time_encoding(re_order) + nodes.mailbox['item_h']) *nodes.mailbox['user_h'],
-                             dim=2) / torch.sqrt(torch.tensor(self.hidden_size).float())
-            alpha = self.atten_drop(F.softmax(e_ij, dim=1))
-            if len(alpha.shape) == 2:
-                alpha = alpha.unsqueeze(2)
-            h_long = torch.sum(alpha * (nodes.mailbox['item_h'] + self.u_time_encoding_k(re_order)), dim=1)
-            h.append(h_long)
-        elif self.user_long == 'gru':
-            rnn_order = torch.sort(nodes.mailbox['time'], 1)[1]
-            _, hidden_i = self.gru_u(nodes.mailbox['item_h'][torch.arange(length).unsqueeze(1), rnn_order])
-            h.append(hidden_i.squeeze(0))
-        ## 短期兴趣编码
-        last = torch.argmax(nodes.mailbox['time'], 1)
-        last_em = nodes.mailbox['item_h'][torch.arange(length), last, :].unsqueeze(1)
-        if self.user_short == 'att':
-            e_ij1 = torch.sum(last_em * nodes.mailbox['item_h'], dim=2)/torch.sqrt(torch.tensor(self.hidden_size).float())
-            alpha1 = self.atten_drop(F.softmax(e_ij1, dim=1))
-            if len(alpha1.shape) == 2:
-                alpha1 = alpha1.unsqueeze(2)
-            h_short = torch.sum(alpha1 * nodes.mailbox['item_h'], dim=1)
-            h.append(h_short)
-        elif self.user_short == 'last':
-            h.append(last_em.squeeze())
-
-        if len(h) == 1:
-            return {'user_h': h[0]}
-        else:
-            return {'user_h': self.agg_gate_u(torch.cat(h,-1))}
 
 def graph_user(bg, user_index, user_embedding):
     b_user_size = bg.batch_num_nodes('user')
