@@ -267,11 +267,7 @@ class CCGNNLayers(nn.Module):
         f_dict = {'user': g.nodes['user'].data['user_h'], 'item': g.nodes['item'].data['item_h']}
         return f_dict
 
-    def graph_update(self, g):
-        # user_encoder 对user进行编码
-        # update all nodes
-        g.multi_update_all({'by': (self.user_message_func, self.user_reduce_func),
-                            'pby': (self.item_message_func, self.item_reduce_func)}, 'sum')
+
         return g
     def new_graph_update(self, g):
         # user_encoder 对user进行编码
