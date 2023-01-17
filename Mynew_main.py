@@ -1,9 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# @Time : 2021/11/17 4:32
-# @Author : ZM7
-# @File : new_main
-# @Software: PyCharm
 
 import datetime
 import torch
