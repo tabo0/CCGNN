@@ -160,7 +160,7 @@ def generate_data(data, graph, item_max_length, user_max_length, train_path, tes
     return a
 
 if __name__ == '__main__':
-    os.chdir('/home/ubuntu/DGSR')
+    os.chdir('/home/ubuntu/CCGNN')
     parser = argparse.ArgumentParser()
     parser.add_argument('--data', default='Beauty', help='data name: sample')
     parser.add_argument('--graph', action='store_true', help='no_batch')
