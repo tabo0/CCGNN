@@ -1,5 +1,5 @@
 # CCGNN
-The code and dataset for our IJCAI 2023 paper: Collaborative Graph Neural Networks with Contrastive Learning for Sequential Recommendation. We have implemented our methods in Pytorch.
+The code and dataset for our paper: Collaborative Graph Neural Networks with Contrastive Learning for Sequential Recommendation. We have implemented our methods in Pytorch.
 
 ## Dependencies
 
